@@ -122,7 +122,8 @@ function onRemove(id: string) {
 .home {
   max-width: 980px;
   margin: 0 auto;
-  padding: 26px 18px 96px;
+  padding: calc(26px + env(safe-area-inset-top)) max(18px, env(safe-area-inset-right))
+    calc(96px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
   position: relative;
   z-index: 1;
 }
@@ -237,8 +238,8 @@ function onRemove(id: string) {
 
 .fab {
   position: fixed;
-  right: 18px;
-  bottom: 18px;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: calc(18px + env(safe-area-inset-bottom));
   z-index: 40;
   width: 58px;
   height: 58px;

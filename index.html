@@ -2,7 +2,23 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1"
+    />
+    <meta name="theme-color" content="#12081f" />
+    <meta name="description" content="把一次性消费按本地日历日摊到每一天的个人工具" />
+
+    <!-- PWA / 添加到主屏幕（Android、部分桌面浏览器） -->
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+
+    <!-- iOS「添加到主屏幕」：全屏 Web App 体验 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="每日摊销" />
+    <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
+
     <title>每日摊销 · Daily Amortize</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
