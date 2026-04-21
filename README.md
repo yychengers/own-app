@@ -191,11 +191,25 @@ src/
 
 ## 部署说明（静态站点）
 
-构建生成静态资源后，将 `dist/` 部署到任意静态托管即可，例如：
+### 推荐：GitHub Pages（免费 HTTPS，已配好 CI）
 
-- GitHub Pages、Cloudflare Pages、Vercel、Netlify、Nginx 静态目录等。
+仓库已包含 [`.github/workflows/deploy-github-pages.yml`](.github/workflows/deploy-github-pages.yml)：推送到 **`main`** 会自动构建并发布。
 
-注意：**Vue Router 使用 `createWebHistory`**，若部署在子路径，需在 `vite.config.ts` 配置 `base`（例如 `base: '/own-app/'`），并保证服务器对 SPA 的回退路由配置正确（否则刷新子路由可能 404）。
+1. 打开 GitHub 仓库 → **Settings** → **Pages**。
+2. **Build and deployment** → **Source** 选择 **GitHub Actions**（不要选 Branch）。
+3. 将本仓库最新代码 **push 到 `main`**（或手动运行 Actions 里的 **Deploy GitHub Pages** workflow）。
+4. 等待 Actions 变绿后，访问：  
+   **`https://<你的用户名>.github.io/<仓库名>/`**  
+   例如仓库名为 `own-app` 时：`https://yychengers.github.io/own-app/`。
+
+说明：
+
+- CI 会注入 `VITE_BASE=/<仓库名>/`，与 `vite.config.ts` 中的 `base` 一致；本地开发不设该变量时仍为根路径 `/`。
+- 构建后会复制 `index.html` 为 `404.html`，减轻 GitHub Pages 上刷新时的白屏问题（路由增多时仍建议在托管侧配置 SPA 回退）。
+
+### 其它静态托管
+
+构建生成 `dist/` 后，也可部署到 Cloudflare Pages、Vercel、Netlify、Nginx 等。若站点不在域名根路径，同样需要设置正确的 `base` / `VITE_BASE`，并配置 SPA 回退。
 
 ---
 
