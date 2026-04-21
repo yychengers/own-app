@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/vscode-settings.json",
+
+  "git.autoRepositoryDetection": true,
+  "git.repositoryScanMaxDepth": 10,
+  "git.openRepositoryInParentFolders": "always",
+  "gitlens.advanced.repositorySearchDepth": 10,
+
+  "gitlens.statusBar.enabled": false
+}
