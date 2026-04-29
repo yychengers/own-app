@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toRef } from 'vue'
+import { computed, toRef } from 'vue'
 import type { Purchase } from '@/stores/purchases'
 import { usePurchaseMetrics } from '@/composables/usePurchaseMetrics'
 import { formatYuan } from '@/utils/money'
@@ -8,6 +8,8 @@ const props = defineProps<{
   item: Purchase
   todayYmd: string
   accent: string
+  /** 达到即显示纪念标签（天） */
+  milestones: number[]
 }>()
 
 const emit = defineEmits<{
@@ -16,6 +18,16 @@ const emit = defineEmits<{
 }>()
 
 const { daysUsed, dailyYuan } = usePurchaseMetrics(toRef(props, 'item'), toRef(props, 'todayYmd'))
+
+const achievedMilestones = computed(() =>
+  [...props.milestones].filter((m) => daysUsed.value >= m).sort((a, b) => a - b),
+)
+
+const tomorrowDaily = computed(() => props.item.amountYuan / (daysUsed.value + 1))
+
+const yearProgressPct = computed(() => Math.min(100, (daysUsed.value / 365) * 100))
+
+const amortizedLinear = computed(() => dailyYuan.value * daysUsed.value)
 </script>
 
 <template>
@@ -24,7 +36,12 @@ const { daysUsed, dailyYuan } = usePurchaseMetrics(toRef(props, 'item'), toRef(p
 
     <header class="card__head">
       <div>
-        <h2 class="card__title">{{ item.name }}</h2>
+        <div class="card__title-row">
+          <h2 class="card__title">{{ item.name }}</h2>
+          <ul v-if="achievedMilestones.length" class="badges" aria-label="已达成里程碑">
+            <li v-for="m in achievedMilestones" :key="m" class="badge mono">已满 {{ m }} 天</li>
+          </ul>
+        </div>
         <p class="card__meta mono">购买日 {{ item.purchaseDate }} · 总价 {{ formatYuan(item.amountYuan) }} 元</p>
       </div>
 
@@ -44,6 +61,26 @@ const { daysUsed, dailyYuan } = usePurchaseMetrics(toRef(props, 'item'), toRef(p
       <div class="stat stat--hero">
         <div class="stat__k">今日摊销（元 / 天）</div>
         <div class="stat__v mono stat__v--big">{{ formatYuan(dailyYuan) }}</div>
+      </div>
+    </div>
+
+    <div class="card__extra">
+      <div class="row">
+        <span class="row__k">明日起若仍持有（多计 1 天）</span>
+        <span class="row__v mono">约 {{ formatYuan(tomorrowDaily) }} 元/天</span>
+      </div>
+      <div class="row">
+        <span class="row__k">线性模型累计（日均×天数）</span>
+        <span class="row__v mono">{{ formatYuan(amortizedLinear) }} 元</span>
+      </div>
+      <p class="row__hint">在「日历日均」定义下，上式应与总价一致（仅可能存在四舍五入误差）。</p>
+
+      <div class="prog">
+        <div class="prog__k">以 365 天为刻度的「使用感」进度（非财务折旧）</div>
+        <div class="prog__bar" role="presentation">
+          <div class="prog__fill" :style="{ width: `${yearProgressPct}%` }" />
+        </div>
+        <div class="prog__pct mono">{{ Math.round(yearProgressPct * 10) / 10 }}%</div>
       </div>
     </div>
   </article>
@@ -79,10 +116,37 @@ const { daysUsed, dailyYuan } = usePurchaseMetrics(toRef(props, 'item'), toRef(p
   gap: 12px;
 }
 
+.card__title-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
 .card__title {
   margin: 0;
   font-size: 18px;
   letter-spacing: 0.2px;
+}
+
+.badges {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--accent) 40%, rgba(255, 255, 255, 0.12));
+  background: rgba(0, 0, 0, 0.25);
+  color: color-mix(in oklab, var(--accent) 85%, white);
 }
 
 .card__meta {
@@ -151,9 +215,79 @@ const { daysUsed, dailyYuan } = usePurchaseMetrics(toRef(props, 'item'), toRef(p
   color: color-mix(in oklab, var(--accent) 78%, white);
 }
 
+.card__extra {
+  position: relative;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.row__k {
+  color: rgba(232, 236, 255, 0.65);
+}
+
+.row__v {
+  color: rgba(232, 236, 255, 0.92);
+  font-weight: 750;
+}
+
+.row__hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(232, 236, 255, 0.52);
+}
+
+.prog {
+  margin-top: 4px;
+}
+
+.prog__k {
+  font-size: 11px;
+  color: rgba(232, 236, 255, 0.58);
+  margin-bottom: 6px;
+}
+
+.prog__bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.prog__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(94, 234, 255, 0.85), rgba(255, 61, 165, 0.75));
+  transition: width 220ms ease;
+}
+
+.prog__pct {
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(232, 236, 255, 0.72);
+}
+
 @media (max-width: 640px) {
   .card__stats {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prog__fill {
+    transition: none;
   }
 }
 </style>

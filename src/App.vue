@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
+import AppToast from '@/components/AppToast.vue'
+import UpdateBanner from '@/components/UpdateBanner.vue'
 </script>
 
 <template>
   <div class="app-root">
+    <UpdateBanner />
     <div class="app-root__aurora" aria-hidden="true" />
     <div class="app-root__grid" aria-hidden="true" />
     <RouterView />
+    <AppToast />
   </div>
 </template>
 
@@ -51,6 +55,13 @@ import { RouterView } from 'vue-router'
 @keyframes spin-aurora {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-root__aurora {
+    animation: none;
+    opacity: 0.28;
   }
 }
 </style>

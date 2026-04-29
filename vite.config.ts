@@ -2,9 +2,15 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
+const base = process.env.VITE_BASE || '/';
+
 export default defineConfig({
-  /** 生产部署到 GitHub Pages 项目站时由 CI 注入，例如 `/own-app/` */
-  base: process.env.VITE_BASE || '/',
+  base,
+  define: {
+    __APP_BUILD_ID__: JSON.stringify(
+      process.env.GITHUB_SHA || process.env.VITE_BUILD_ID || 'dev-local',
+    ),
+  },
   plugins: [vue()],
   resolve: {
     alias: {

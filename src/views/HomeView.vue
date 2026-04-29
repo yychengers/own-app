@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, toRef, watch } from 'vue'
 import AddPurchaseModal from '@/components/AddPurchaseModal.vue'
+import DataToolbar from '@/components/DataToolbar.vue'
 import PurchaseCard from '@/components/PurchaseCard.vue'
+import { useDisplayedPurchases } from '@/composables/useDisplayedPurchases'
 import { useLocalCalendarDay } from '@/composables/useLocalCalendarDay'
+import { pushToast } from '@/composables/useToast'
 import type { Purchase } from '@/stores/purchases'
 import { usePurchasesStore } from '@/stores/purchases'
+import { useSettingsStore } from '@/stores/settings'
 import { inclusiveCalendarDaysBetween } from '@/utils/dates'
 import { formatYuan } from '@/utils/money'
 
 const store = usePurchasesStore()
+const settings = useSettingsStore()
 const { todayYmd } = useLocalCalendarDay()
 
 const modalOpen = ref(false)
@@ -18,8 +23,17 @@ const editingId = ref<string | null>(null)
 const accents = ['#5eeaff', '#ff3da5', '#ffd666', '#a87aff', '#58ffa9', '#ff8a3d'] as const
 const accentAt = (i: number) => accents[i % accents.length]!
 
+const displayed = useDisplayedPurchases(
+  toRef(store, 'items'),
+  todayYmd,
+  toRef(settings, 'searchQuery'),
+  toRef(settings, 'onlyThisWeek'),
+  toRef(settings, 'sortMode'),
+)
+
 onMounted(() => {
   store.hydrate()
+  settings.hydrate()
 })
 
 watch(
@@ -67,6 +81,7 @@ function onRemove(id: string) {
   const ok = window.confirm('确定删除这条记录吗？')
   if (!ok) return
   store.removePurchase(id)
+  pushToast('已删除一条记录', 'info')
 }
 </script>
 
@@ -76,6 +91,10 @@ function onRemove(id: string) {
       <div class="hero__badge mono">LOCAL · {{ todayYmd }}</div>
       <h1 class="hero__title">每日摊销实验室</h1>
       <p class="hero__desc">把一次性支出摊到每一天：价格 ÷ 从购买日到今天（含首尾）的日历天数。每天 0 点按你电脑的本地时区自动换日。</p>
+
+      <div v-if="store.isHydrated && !store.hasItems" class="hero__guide" role="note">
+        <strong>开始使用：</strong>在弹窗中填写或点「填入示例」，保存后即可在列表里排序、筛选、导出备份。
+      </div>
 
       <div v-if="store.loadError" class="banner banner--warn" role="status">
         {{ store.loadError }}
@@ -91,6 +110,8 @@ function onRemove(id: string) {
           <div class="pill__v mono">{{ store.items.length }}</div>
         </div>
       </section>
+
+      <DataToolbar v-if="store.isHydrated" />
     </header>
 
     <section v-if="!store.isHydrated" class="loading" aria-live="polite">
@@ -99,12 +120,16 @@ function onRemove(id: string) {
     </section>
 
     <section v-else class="list" aria-label="消费列表">
+      <p v-if="store.hasItems && displayed.length === 0" class="empty-hint">
+        当前搜索 / 「仅本周」条件下没有匹配记录，可清空筛选或调整关键词。
+      </p>
       <PurchaseCard
-        v-for="(it, idx) in store.items"
+        v-for="(it, idx) in displayed"
         :key="it.id"
         :item="it"
         :today-ymd="todayYmd"
         :accent="accentAt(idx)"
+        :milestones="settings.milestoneDays"
         @remove="onRemove"
         @edit="onEdit"
       />
@@ -157,6 +182,18 @@ function onRemove(id: string) {
   color: rgba(232, 236, 255, 0.72);
   line-height: 1.65;
   font-size: 14px;
+}
+
+.hero__guide {
+  margin-top: 12px;
+  max-width: 72ch;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(94, 234, 255, 0.2);
+  background: rgba(94, 234, 255, 0.06);
+  color: rgba(232, 236, 255, 0.88);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .hero__summary {
@@ -230,10 +267,27 @@ function onRemove(id: string) {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .loading__spinner {
+    animation: none;
+    border-top-color: rgba(94, 234, 255, 0.45);
+  }
+}
+
 .list {
   margin-top: 18px;
   display: grid;
   gap: 12px;
+}
+
+.empty-hint {
+  margin: 0 0 8px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 214, 102, 0.18);
+  background: rgba(255, 214, 102, 0.06);
+  color: rgba(255, 236, 200, 0.9);
+  font-size: 13px;
 }
 
 .fab {

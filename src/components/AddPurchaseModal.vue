@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import CalendarDatePicker from '@/components/CalendarDatePicker.vue'
+import { pushToast } from '@/composables/useToast'
 import { formatLocalYmd } from '@/utils/dates'
 import { usePurchasesStore } from '@/stores/purchases'
 
@@ -75,6 +76,17 @@ function closeIfAllowed() {
   emit('update:open', false)
 }
 
+function fillDemo() {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() - 30)
+  name.value = '示例 · 手机'
+  amount.value = '1000'
+  purchaseDate.value = formatLocalYmd(d)
+  formError.value = null
+  pushToast('已填入示例，可直接保存', 'info')
+}
+
 function parseAmount(): number | null {
   const raw = amount.value.trim().replace(/,/g, '')
   if (!raw) return null
@@ -113,6 +125,7 @@ async function onSubmit() {
     return
   }
 
+  pushToast(isEdit.value ? '已保存修改' : '已添加记录', 'ok')
   emit('update:open', false)
   if (!props.editingId) {
     name.value = ''
@@ -130,7 +143,9 @@ async function onSubmit() {
           <header class="dialog__head">
             <div>
               <div id="dlg-title" class="dialog__title">{{ title }}</div>
-              <p class="dialog__sub">例如：1000 元买了一部手机。系统会按「本地日历日」从购买日累计到今天（含首尾两天）计算每日成本。</p>
+              <p class="dialog__sub">
+                例如：1000 元买了一部手机。系统按<strong>本地日历日</strong>从购买日累计到今天（含首尾两天）计算每日成本。也可点下方「填入示例」快速体验。
+              </p>
             </div>
             <button v-if="!lockUntilFirstSave" type="button" class="icon-btn" aria-label="关闭" @click="closeIfAllowed">
               ✕
@@ -154,6 +169,10 @@ async function onSubmit() {
             </div>
 
             <p v-if="formError" class="form__error" role="alert">{{ formError }}</p>
+
+            <div class="form__demo">
+              <button type="button" class="btn btn--link" :disabled="submitting" @click="fillDemo">填入示例（手机 · 1000 元 · 30 天前）</button>
+            </div>
 
             <footer class="form__actions">
               <button v-if="!lockUntilFirstSave" type="button" class="btn btn--ghost" :disabled="submitting" @click="closeIfAllowed">
@@ -266,6 +285,26 @@ async function onSubmit() {
   margin: 0;
   color: #ffb4d1;
   font-size: 13px;
+}
+
+.form__demo {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.btn--link {
+  border: none;
+  background: transparent;
+  color: rgba(94, 234, 255, 0.92);
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.btn--link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .form__actions {
